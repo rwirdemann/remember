@@ -1,4 +1,4 @@
-package remember
+package pkg
 
 import (
 	"fmt"
@@ -6,14 +6,14 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-type createCardModel struct {
+type InputModel struct {
 	question   textinput.Model
 	answer     textinput.Model
 	focusIndex int
 	err        error
 }
 
-func initialCreateCardModel() createCardModel {
+func NewModel() InputModel {
 	tiq := textinput.New()
 	tiq.Placeholder = "Question"
 	tiq.Focus()
@@ -21,18 +21,18 @@ func initialCreateCardModel() createCardModel {
 	tia := textinput.New()
 	tia.Placeholder = "Answer"
 
-	return createCardModel{
+	return InputModel{
 		question: tiq,
 		answer:   tia,
 		err:      nil,
 	}
 }
 
-func (m createCardModel) Init() tea.Cmd {
+func (m InputModel) Init() tea.Cmd {
 	return textinput.Blink
 }
 
-func (m createCardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m InputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
@@ -50,12 +50,12 @@ func (m createCardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.question.Blur()
 			return m, m.answer.Focus()
 		case tea.KeyEsc:
-			Model.cards = append(Model.cards, card{
-				question: m.question.Value(),
-				answer:   m.answer.Value(),
+			Remember.Cards = append(Remember.Cards, ViewModel{
+				Question: m.question.Value(),
+				Answer:   m.answer.Value(),
 			})
-			Model.cursor = len(Model.cards) - 1
-			return Model, nil
+			Remember.Cursor = len(Remember.Cards) - 1
+			return Remember, nil
 		}
 
 	case error:
@@ -71,7 +71,7 @@ func (m createCardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m createCardModel) View() string {
+func (m InputModel) View() string {
 	s := fmt.Sprintf(
 		"Question?\n\n%s",
 		m.question.View(),

@@ -1,38 +1,37 @@
-package remember
+package pkg
 
 import (
 	"fmt"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-type model struct {
-	cards    []card
-	cursor   int              // which card our cursor is pointing at
-	selected map[int]struct{} // which cards are selected
+type ListModel struct {
+	Cards  []ViewModel
+	Cursor int // which card our cursor is pointing at
 }
 
-var Model model
+var Remember ListModel
 
 func init() {
-	Model = model{
-		cards: []card{
+	Remember = ListModel{
+		Cards: []ViewModel{
 			{
-				question: "Wie verändert man das JSON-Marshaling-Verhalten eines Typs?",
-				answer:   "Indem das Interface json.Marshaler implementiert wird.",
+				Question: "Wie verändert man das JSON-Marshaling-Verhalten eines Typs?",
+				Answer:   "Indem das Interface json.Marshaler implementiert wird.",
 			},
 			{
-				question: "Wie werden die Methoden einen eingebnetteten Typs aufgerufen?",
-				answer:   "Direkt auf dem umschliessenden Typ.",
+				Question: "Wie werden die Methoden einen eingebnetteten Typs aufgerufen?",
+				Answer:   "Direkt auf dem umschliessenden Typ.",
 			},
 		},
 	}
 }
 
-func (m model) Init() tea.Cmd {
+func (m ListModel) Init() tea.Cmd {
 	return nil
 }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m ListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
 	// Is it a key press?
@@ -47,47 +46,47 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// These keys should exit the program.
 		case "n":
-			return initialCreateCardModel(), nil
+			return NewModel(), nil
 
 		// The "up" and "k" keys move the cursor up
 		case "up", "k":
-			if m.cursor > 0 {
-				m.cursor--
+			if m.Cursor > 0 {
+				m.Cursor--
 			}
 
 		// The "down" and "j" keys move the cursor down
 		case "down", "j":
-			if m.cursor < len(m.cards)-1 {
-				m.cursor++
+			if m.Cursor < len(m.Cards)-1 {
+				m.Cursor++
 			}
 
 		// The "enter" key and the spacebar (a literal space) toggle
 		// the selected state for the item that the cursor is pointing at.
 		case "enter", " ":
-			return m.cards[m.cursor], nil
+			return m.Cards[m.Cursor], nil
 		}
 	}
 
-	// Return the updated model to the Bubble Tea runtime for processing.
+	// Return the updated InputModel to the Bubble Tea runtime for processing.
 	// Note that we're not returning a command.
 	return m, nil
 
 }
 
-func (m model) View() string {
+func (m ListModel) View() string {
 	// The header
 	s := ""
 
-	for i, card := range m.cards {
+	for i, card := range m.Cards {
 
 		// Is the cursor pointing at this card?
 		cursor := " " // no cursor
-		if m.cursor == i {
+		if m.Cursor == i {
 			cursor = ">" // cursor!
 		}
 
 		// Render the row
-		s += fmt.Sprintf("%s %s\n", cursor, card.question)
+		s += fmt.Sprintf("%s %s\n", cursor, card.Question)
 	}
 
 	// The footer
