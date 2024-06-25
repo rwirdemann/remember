@@ -54,6 +54,7 @@ func (m createCardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				question: m.question.Value(),
 				answer:   m.answer.Value(),
 			})
+			Model.cursor = len(Model.cards) - 1
 			return Model, nil
 		}
 
