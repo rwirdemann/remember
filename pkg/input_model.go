@@ -39,6 +39,15 @@ func (m InputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyTab, tea.KeyEnter:
+			if m.focusIndex == 1 {
+				Model.Cards = append(Model.Cards, ViewModel{
+					Question: m.question.Value(),
+					Answer:   m.answer.Value(),
+				})
+				Model.Cursor = len(Model.Cards) - 1
+				return Model, nil
+			}
+
 			m.focusIndex++
 			if m.focusIndex > 1 {
 				m.focusIndex = 0
@@ -49,13 +58,6 @@ func (m InputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.question.Blur()
 			return m, m.answer.Focus()
-		case tea.KeyEsc:
-			Remember.Cards = append(Remember.Cards, ViewModel{
-				Question: m.question.Value(),
-				Answer:   m.answer.Value(),
-			})
-			Remember.Cursor = len(Remember.Cards) - 1
-			return Remember, nil
 		}
 
 	case error:
@@ -78,9 +80,8 @@ func (m InputModel) View() string {
 	) + "\n"
 
 	s = s + fmt.Sprintf(
-		"\nAnswer?\n\n%s\n\n%s",
+		"\nAnswer?\n\n%s\n\n",
 		m.answer.View(),
-		"(esc to quit)",
 	) + "\n"
 	return s
 }

@@ -10,10 +10,10 @@ type ListModel struct {
 	Cursor int // which card our cursor is pointing at
 }
 
-var Remember ListModel
+var Model ListModel
 
 func init() {
-	Remember = ListModel{
+	Model = ListModel{
 		Cards: []ViewModel{
 			{
 				Question: "Wie verändert man das JSON-Marshaling-Verhalten eines Typs?",
@@ -90,7 +90,7 @@ func (m ListModel) View() string {
 	}
 
 	// The footer
-	s += "\nPress q to quit, n to add a new card\n"
+	s += "\nn: new card • q: quit\n"
 
 	// Send the UI for rendering
 	return s
