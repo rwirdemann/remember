@@ -6,25 +6,38 @@ import (
 )
 
 type ViewModel struct {
+	parent   *ListModel
 	Question string
 	Answer   string
 }
 
-func (c ViewModel) Init() tea.Cmd {
+func NewViewModel(parent *ListModel, question, answer string) ViewModel {
+	return ViewModel{
+		parent:   parent,
+		Question: question,
+		Answer:   answer,
+	}
+}
+
+func (m ViewModel) Init() tea.Cmd {
 	return nil
 }
 
-func (c ViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m ViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "enter", " ":
-			return Model, nil
+			return m.parent, nil
 		}
 	}
-	return c, nil
+	return m, nil
 }
 
-func (c ViewModel) View() string {
-	return fmt.Sprintf("%s\n", c.Answer)
+func (m ViewModel) View() string {
+	s := fmt.Sprintf("\n%s\n", m.Answer)
+
+	// The footer
+	s += "\nenter: return\n"
+	return s
 }

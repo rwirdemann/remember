@@ -11,9 +11,10 @@ type InputModel struct {
 	answer     textinput.Model
 	focusIndex int
 	err        error
+	parent     *ListModel
 }
 
-func NewModel() InputModel {
+func NewModel(parent *ListModel) InputModel {
 	tiq := textinput.New()
 	tiq.Placeholder = "Question"
 	tiq.Focus()
@@ -22,6 +23,7 @@ func NewModel() InputModel {
 	tia.Placeholder = "Answer"
 
 	return InputModel{
+		parent:   parent,
 		question: tiq,
 		answer:   tia,
 		err:      nil,
@@ -40,12 +42,12 @@ func (m InputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.Type {
 		case tea.KeyTab, tea.KeyEnter:
 			if m.focusIndex == 1 {
-				Model.Cards = append(Model.Cards, ViewModel{
-					Question: m.question.Value(),
-					Answer:   m.answer.Value(),
-				})
-				Model.Cursor = len(Model.Cards) - 1
-				return Model, nil
+				m.parent.Cards = append(m.parent.Cards, NewViewModel(m.parent,
+					m.question.Value(),
+					m.answer.Value(),
+				))
+				m.parent.Cursor = len(m.parent.Cards) - 1
+				return m.parent, nil
 			}
 
 			m.focusIndex++
@@ -80,8 +82,11 @@ func (m InputModel) View() string {
 	) + "\n"
 
 	s = s + fmt.Sprintf(
-		"\nAnswer?\n\n%s\n\n",
+		"\nAnswer?\n\n%s\n",
 		m.answer.View(),
 	) + "\n"
+
+	s += "\nenter: focus next\n"
+
 	return s
 }

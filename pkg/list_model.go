@@ -10,28 +10,24 @@ type ListModel struct {
 	Cursor int // which card our cursor is pointing at
 }
 
-var Model ListModel
-
-func init() {
-	Model = ListModel{
-		Cards: []ViewModel{
-			{
-				Question: "Wie verändert man das JSON-Marshaling-Verhalten eines Typs?",
-				Answer:   "Indem das Interface json.Marshaler implementiert wird.",
-			},
-			{
-				Question: "Wie werden die Methoden einen eingebnetteten Typs aufgerufen?",
-				Answer:   "Direkt auf dem umschliessenden Typ.",
-			},
-		},
-	}
+func NewListModel() *ListModel {
+	m := ListModel{}
+	m.Cards = append(m.Cards, NewViewModel(&m,
+		"Wie verändert man das JSON-Marshaling-Verhalten eines Typs?",
+		"Indem das Interface json.Marshaler implementiert wird.",
+	))
+	m.Cards = append(m.Cards, NewViewModel(&m,
+		"Wie werden die Methoden einen eingebetteten Typs aufgerufen?",
+		"Direkt auf dem umschliessenden Typ.",
+	))
+	return &m
 }
 
-func (m ListModel) Init() tea.Cmd {
+func (m *ListModel) Init() tea.Cmd {
 	return nil
 }
 
-func (m ListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *ListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
 	// Is it a key press?
@@ -45,8 +41,16 @@ func (m ListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		// These keys should exit the program.
-		case "n":
-			return NewModel(), nil
+		case "a":
+			return NewModel(m), nil
+
+		case "d":
+			m.Cards = append(m.Cards[:m.Cursor], m.Cards[m.Cursor+1:]...)
+			m.Cursor -= 1
+			if m.Cursor < 0 {
+				m.Cursor = 0
+			}
+			return m, nil
 
 		// The "up" and "k" keys move the cursor up
 		case "up", "k":
@@ -73,9 +77,9 @@ func (m ListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 }
 
-func (m ListModel) View() string {
+func (m *ListModel) View() string {
 	// The header
-	s := ""
+	s := "\n"
 
 	for i, card := range m.Cards {
 
@@ -90,7 +94,7 @@ func (m ListModel) View() string {
 	}
 
 	// The footer
-	s += "\nn: new card • q: quit\n"
+	s += "\na: new card • d: delete • q: quit\n"
 
 	// Send the UI for rendering
 	return s
