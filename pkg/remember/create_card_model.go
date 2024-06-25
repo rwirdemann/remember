@@ -7,19 +7,23 @@ import (
 )
 
 type createCardModel struct {
-	question textinput.Model
-	err      error
+	question   textinput.Model
+	answer     textinput.Model
+	focusIndex int
+	err        error
 }
 
 func initialCreateCardModel() createCardModel {
-	ti := textinput.New()
-	ti.Placeholder = "Question"
-	ti.Focus()
-	ti.CharLimit = 156
-	ti.Width = 20
+	tiq := textinput.New()
+	tiq.Placeholder = "Question"
+	tiq.Focus()
+
+	tia := textinput.New()
+	tia.Placeholder = "Answer"
 
 	return createCardModel{
-		question: ti,
+		question: tiq,
+		answer:   tia,
 		err:      nil,
 	}
 }
@@ -34,29 +38,48 @@ func (m createCardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.Type {
-		case tea.KeyEnter, tea.KeyCtrlC, tea.KeyEsc:
+		case tea.KeyTab, tea.KeyEnter:
+			m.focusIndex++
+			if m.focusIndex > 1 {
+				m.focusIndex = 0
+			}
+			if m.focusIndex == 0 {
+				m.answer.Blur()
+				return m, m.question.Focus()
+			}
+			m.question.Blur()
+			return m, m.answer.Focus()
+		case tea.KeyEsc:
 			Model.cards = append(Model.cards, card{
 				question: m.question.Value(),
-				answer:   "",
+				answer:   m.answer.Value(),
 			})
-
 			return Model, nil
 		}
 
-	// We handle errors just like any other message
 	case error:
 		m.err = msg
 		return m, nil
 	}
 
-	m.question, cmd = m.question.Update(msg)
+	if m.focusIndex == 0 {
+		m.question, cmd = m.question.Update(msg)
+	} else {
+		m.answer, cmd = m.answer.Update(msg)
+	}
 	return m, cmd
 }
 
 func (m createCardModel) View() string {
-	return fmt.Sprintf(
-		"What’s the Question?\n\n%s\n\n%s",
+	s := fmt.Sprintf(
+		"Question?\n\n%s",
 		m.question.View(),
+	) + "\n"
+
+	s = s + fmt.Sprintf(
+		"\nAnswer?\n\n%s\n\n%s",
+		m.answer.View(),
 		"(esc to quit)",
 	) + "\n"
+	return s
 }
