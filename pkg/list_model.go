@@ -1,17 +1,20 @@
 package pkg
 
 import (
+	"encoding/json"
 	"fmt"
 	tea "github.com/charmbracelet/bubbletea"
+	"io"
 )
 
 type ListModel struct {
-	Cards  []ViewModel
-	Cursor int // which card our cursor is pointing at
+	Cards  []ViewModel `json:"cards"`
+	Cursor int         `json:"-"`
+	writer io.Writer
 }
 
-func NewListModel() *ListModel {
-	m := ListModel{}
+func NewListModel(writer io.Writer) *ListModel {
+	m := ListModel{writer: writer}
 	m.Cards = append(m.Cards, NewViewModel(&m,
 		"Wie verändert man das JSON-Marshaling-Verhalten eines Typs?",
 		"Indem das Interface json.Marshaler implementiert wird.",
@@ -36,11 +39,10 @@ func (m *ListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Cool, what was the actual key pressed?
 		switch msg.String() {
 
-		// These keys should exit the program.
 		case "ctrl+c", "q":
+			m.Write()
 			return m, tea.Quit
 
-		// These keys should exit the program.
 		case "a":
 			return NewModel(m), nil
 
@@ -98,4 +100,18 @@ func (m *ListModel) View() string {
 
 	// Send the UI for rendering
 	return s
+}
+
+func (m *ListModel) Write() error {
+	bb, err := json.Marshal(m)
+	if err != nil {
+		return err
+	}
+
+	_, err = m.writer.Write(bb)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

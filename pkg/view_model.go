@@ -7,8 +7,8 @@ import (
 
 type ViewModel struct {
 	parent   *ListModel
-	Question string
-	Answer   string
+	Question string `json:"question"`
+	Answer   string `json:"answer"`
 }
 
 func NewViewModel(parent *ListModel, question, answer string) ViewModel {
@@ -36,8 +36,6 @@ func (m ViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m ViewModel) View() string {
 	s := fmt.Sprintf("\n%s\n", m.Answer)
-
-	// The footer
 	s += "\nenter: return\n"
 	return s
 }
