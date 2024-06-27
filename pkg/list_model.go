@@ -6,7 +6,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/google/uuid"
 	"io"
-	"math/rand"
 )
 
 type ListModel struct {
@@ -37,10 +36,7 @@ func (m *ListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return NewModel(m, m.Cards[m.Cursor]), nil
 
 		case "t":
-			trainModel := TrainModel{}
-			trainModel.cards = m.Cards
-			trainModel.selected = rand.Intn(len(m.Cards))
-			trainModel.parent = m
+			trainModel := NewTrainModel(m, m.Cards)
 			return trainModel, nil
 
 		case "d":
