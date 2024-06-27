@@ -84,7 +84,7 @@ func (m InputModel) View() string {
 	s = s + fmt.Sprintf(
 		"\nAnswer?\n\n%s\n",
 		m.answer.View(),
-	) + "\n"
+	)
 
 	s += "\nenter: focus next\n"
 

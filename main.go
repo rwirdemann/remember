@@ -19,15 +19,29 @@ func main() {
 	if !strings.HasSuffix(name, ".json") {
 		name = fmt.Sprintf("%s.json", name)
 	}
-	f, err := os.Create(name)
+
+	var f *os.File
+	var err error
+	if exists(name) {
+		f, err = os.Open(name)
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		f, err = os.Create(name)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	defer f.Close()
+	reader := bufio.NewReader(f)
+	writer := bufio.NewWriter(f)
+
+	model, err := pkg.NewListModel(reader, writer)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer func(f *os.File) {
-		_ = f.Close()
-	}(f)
-	writer := bufio.NewWriter(f)
-	p := tea.NewProgram(pkg.NewListModel(writer), tea.WithAltScreen())
+	p := tea.NewProgram(model, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)
@@ -36,4 +50,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func exists(name string) bool {
+	if _, err := os.Stat(name); os.IsNotExist(err) {
+		return false
+	}
+	return true
 }

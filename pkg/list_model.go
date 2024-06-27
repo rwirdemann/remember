@@ -13,17 +13,12 @@ type ListModel struct {
 	writer io.Writer
 }
 
-func NewListModel(writer io.Writer) *ListModel {
+func NewListModel(reader io.Reader, writer io.Writer) (*ListModel, error) {
 	m := ListModel{writer: writer}
-	m.Cards = append(m.Cards, NewViewModel(&m,
-		"Wie verändert man das JSON-Marshaling-Verhalten eines Typs?",
-		"Indem das Interface json.Marshaler implementiert wird.",
-	))
-	m.Cards = append(m.Cards, NewViewModel(&m,
-		"Wie werden die Methoden einen eingebetteten Typs aufgerufen?",
-		"Direkt auf dem umschliessenden Typ.",
-	))
-	return &m
+	if err := m.Read(reader); err != nil {
+		return nil, err
+	}
+	return &m, nil
 }
 
 func (m *ListModel) Init() tea.Cmd {
@@ -103,7 +98,7 @@ func (m *ListModel) View() string {
 }
 
 func (m *ListModel) Write() error {
-	bb, err := json.Marshal(m)
+	bb, err := json.Marshal(m.Cards)
 	if err != nil {
 		return err
 	}
@@ -113,5 +108,24 @@ func (m *ListModel) Write() error {
 		return err
 	}
 
+	return nil
+}
+
+func (m *ListModel) Read(reader io.Reader) error {
+	bb, err := io.ReadAll(reader)
+	if err != nil {
+		return err
+	}
+	if len(bb) == 0 {
+		return nil
+	}
+	var cards []ViewModel
+	if err := json.Unmarshal(bb, &cards); err != nil {
+		return err
+	}
+	m.Cards = cards
+	for i, _ := range m.Cards {
+		m.Cards[i].parent = m
+	}
 	return nil
 }
