@@ -5,18 +5,18 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-type ViewModel struct {
+type CardModel struct {
 	parent   *ListModel
 	Question string `json:"question"`
 	Answer   string `json:"answer"`
 	UUID     string `json:"uuid"`
 }
 
-func (m ViewModel) Init() tea.Cmd {
+func (m CardModel) Init() tea.Cmd {
 	return nil
 }
 
-func (m ViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m CardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -27,7 +27,7 @@ func (m ViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m ViewModel) View() string {
+func (m CardModel) View() string {
 	s := fmt.Sprintf("\n%s\n", m.Answer)
 	s += "\nenter: return\n"
 	return s

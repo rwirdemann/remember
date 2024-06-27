@@ -9,7 +9,7 @@ import (
 )
 
 type ListModel struct {
-	Cards  []ViewModel `json:"cards"`
+	Cards  []CardModel `json:"cards"`
 	Cursor int         `json:"-"`
 }
 
@@ -30,7 +30,7 @@ func (m *ListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case "a":
-			return NewModel(m, ViewModel{}), nil
+			return NewModel(m, CardModel{}), nil
 
 		case "e":
 			return NewModel(m, m.Cards[m.Cursor]), nil
@@ -113,7 +113,7 @@ func (m *ListModel) Read(reader io.Reader) error {
 	if len(bb) == 0 {
 		return nil
 	}
-	var cards []ViewModel
+	var cards []CardModel
 	if err := json.Unmarshal(bb, &cards); err != nil {
 		return err
 	}
@@ -124,7 +124,7 @@ func (m *ListModel) Read(reader io.Reader) error {
 	return nil
 }
 
-func (m *ListModel) AddOrUpdate(vm ViewModel) {
+func (m *ListModel) AddOrUpdate(vm CardModel) {
 	if len(vm.UUID) == 0 {
 		vm.UUID = uuid.NewString()
 		m.Cards = append(m.Cards, vm)

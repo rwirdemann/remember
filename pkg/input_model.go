@@ -15,7 +15,7 @@ type InputModel struct {
 	parent     *ListModel
 }
 
-func NewModel(parent *ListModel, model ViewModel) InputModel {
+func NewModel(parent *ListModel, model CardModel) InputModel {
 	tiq := textinput.New()
 	tiq.Placeholder = "Question"
 	tiq.Focus()
@@ -51,7 +51,7 @@ func (m InputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.Type {
 		case tea.KeyTab, tea.KeyEnter:
 			if m.focusIndex == 1 {
-				vm := ViewModel{
+				vm := CardModel{
 					parent:   m.parent,
 					Question: m.question.Value(),
 					Answer:   m.answer.Value(),
