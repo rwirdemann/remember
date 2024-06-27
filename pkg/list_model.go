@@ -6,6 +6,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/google/uuid"
 	"io"
+	"math/rand"
 )
 
 type ListModel struct {
@@ -34,6 +35,13 @@ func (m *ListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "e":
 			return NewModel(m, m.Cards[m.Cursor]), nil
+
+		case "t":
+			trainModel := TrainModel{}
+			trainModel.cards = m.Cards
+			trainModel.selected = rand.Intn(len(m.Cards))
+			trainModel.parent = m
+			return trainModel, nil
 
 		case "d":
 			m.Cards = append(m.Cards[:m.Cursor], m.Cards[m.Cursor+1:]...)
@@ -85,7 +93,7 @@ func (m *ListModel) View() string {
 	}
 
 	// The footer
-	s += "\na: new card • e: edit • d: delete • q: quit\n"
+	s += "\na: new card • e: edit • d: delete • t: train • q: quit\n"
 
 	// Send the UI for rendering
 	return s
