@@ -4,21 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/google/uuid"
 	"io"
 )
 
 type ListModel struct {
 	Cards  []ViewModel `json:"cards"`
 	Cursor int         `json:"-"`
-	writer io.Writer
-}
-
-func NewListModel(reader io.Reader, writer io.Writer) (*ListModel, error) {
-	m := ListModel{writer: writer}
-	if err := m.Read(reader); err != nil {
-		return nil, err
-	}
-	return &m, nil
 }
 
 func (m *ListModel) Init() tea.Cmd {
@@ -35,11 +27,13 @@ func (m *ListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 
 		case "ctrl+c", "q":
-			m.Write()
 			return m, tea.Quit
 
 		case "a":
-			return NewModel(m), nil
+			return NewModel(m, ViewModel{}), nil
+
+		case "e":
+			return NewModel(m, m.Cards[m.Cursor]), nil
 
 		case "d":
 			m.Cards = append(m.Cards[:m.Cursor], m.Cards[m.Cursor+1:]...)
@@ -91,19 +85,19 @@ func (m *ListModel) View() string {
 	}
 
 	// The footer
-	s += "\na: new card • d: delete • q: quit\n"
+	s += "\na: new card • e: edit • d: delete • q: quit\n"
 
 	// Send the UI for rendering
 	return s
 }
 
-func (m *ListModel) Write() error {
+func (m *ListModel) Write(writer io.Writer) error {
 	bb, err := json.Marshal(m.Cards)
 	if err != nil {
 		return err
 	}
 
-	_, err = m.writer.Write(bb)
+	_, err = writer.Write(bb)
 	if err != nil {
 		return err
 	}
@@ -128,4 +122,18 @@ func (m *ListModel) Read(reader io.Reader) error {
 		m.Cards[i].parent = m
 	}
 	return nil
+}
+
+func (m *ListModel) AddOrUpdate(vm ViewModel) {
+	if len(vm.UUID) == 0 {
+		vm.UUID = uuid.NewString()
+		m.Cards = append(m.Cards, vm)
+		return
+	}
+	for i, c := range m.Cards {
+		if c.UUID == vm.UUID {
+			m.Cards[i] = vm
+			break
+		}
+	}
 }

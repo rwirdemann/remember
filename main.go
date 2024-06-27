@@ -20,41 +20,31 @@ func main() {
 		name = fmt.Sprintf("%s.json", name)
 	}
 
-	var f *os.File
-	var err error
-	if exists(name) {
-		f, err = os.Open(name)
-		if err != nil {
-			log.Fatal(err)
-		}
-	} else {
-		f, err = os.Create(name)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-	defer f.Close()
-	reader := bufio.NewReader(f)
-	writer := bufio.NewWriter(f)
-
-	model, err := pkg.NewListModel(reader, writer)
+	// create model and initialize it with contents from file
+	in, err := os.OpenFile(name, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer in.Close()
+	model := &pkg.ListModel{}
+	if err := model.Read(bufio.NewReader(in)); err != nil {
+		log.Fatal(err)
+	}
+
 	p := tea.NewProgram(model, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)
 	}
-	err = writer.Flush()
-	if err != nil {
+
+	// write updated model content back to file
+	out, err := os.OpenFile(name, os.O_WRONLY|os.O_TRUNC, 0666)
+	defer out.Close()
+	writer := bufio.NewWriter(out)
+	if err := model.Write(writer); err != nil {
 		log.Fatal(err)
 	}
-}
-
-func exists(name string) bool {
-	if _, err := os.Stat(name); os.IsNotExist(err) {
-		return false
+	if err := writer.Flush(); err != nil {
+		log.Fatal(err)
 	}
-	return true
 }

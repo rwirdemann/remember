@@ -9,14 +9,7 @@ type ViewModel struct {
 	parent   *ListModel
 	Question string `json:"question"`
 	Answer   string `json:"answer"`
-}
-
-func NewViewModel(parent *ListModel, question, answer string) ViewModel {
-	return ViewModel{
-		parent:   parent,
-		Question: question,
-		Answer:   answer,
-	}
+	UUID     string `json:"uuid"`
 }
 
 func (m ViewModel) Init() tea.Cmd {
