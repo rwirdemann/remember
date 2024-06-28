@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"strings"
 )
 
 type InputModel struct {
@@ -49,16 +50,9 @@ func (m InputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.Type {
-		case tea.KeyTab, tea.KeyEnter:
+		case tea.KeyTab:
 			if m.focusIndex == 1 {
-				vm := CardModel{
-					parent:   m.parent,
-					Question: m.question.Value(),
-					Answer:   m.answer.Value(),
-					UUID:     m.uuid,
-				}
-				vm.parent.AddOrUpdate(vm)
-				m.parent.Cursor = len(m.parent.Cards) - 1
+				m.addCard()
 				return m.parent, nil
 			}
 
@@ -85,6 +79,19 @@ func (m InputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.answer, cmd = m.answer.Update(msg)
 	}
 	return m, cmd
+}
+
+func (m InputModel) addCard() {
+	if len(strings.Trim(m.question.Value(), " ")) > 0 && len(strings.Trim(m.answer.Value(), " ")) > 0 {
+		vm := CardModel{
+			parent:   m.parent,
+			Question: m.question.Value(),
+			Answer:   m.answer.Value(),
+			UUID:     m.uuid,
+		}
+		vm.parent.AddOrUpdate(vm)
+		m.parent.Cursor = len(m.parent.Cards) - 1
+	}
 }
 
 func (m InputModel) View() string {
