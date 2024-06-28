@@ -8,14 +8,14 @@ import (
 
 type TrainModel struct {
 	parent     *ListModel
-	cards      []CardModel
+	cards      []card
 	selected   int
 	showAnswer bool
 	memorized  int
 	checked    map[int]struct{}
 }
 
-func NewTrainModel(parent *ListModel, cards []CardModel) TrainModel {
+func NewTrainModel(parent *ListModel, cards []card) TrainModel {
 	m := TrainModel{parent: parent, cards: cards}
 	m.checked = make(map[int]struct{})
 	m.selected = rand.Intn(len(cards))

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"strings"
 )
 
 type InputModel struct {
@@ -16,7 +15,7 @@ type InputModel struct {
 	parent     *ListModel
 }
 
-func NewModel(parent *ListModel, model CardModel) InputModel {
+func NewModel(parent *ListModel, model card) InputModel {
 	tiq := textinput.New()
 	tiq.Placeholder = "Question"
 	tiq.Focus()
@@ -82,16 +81,6 @@ func (m InputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m InputModel) addCard() {
-	if len(strings.Trim(m.question.Value(), " ")) > 0 && len(strings.Trim(m.answer.Value(), " ")) > 0 {
-		vm := CardModel{
-			parent:   m.parent,
-			Question: m.question.Value(),
-			Answer:   m.answer.Value(),
-			UUID:     m.uuid,
-		}
-		vm.parent.AddOrUpdate(vm)
-		m.parent.Cursor = len(m.parent.Cards) - 1
-	}
 }
 
 func (m InputModel) View() string {

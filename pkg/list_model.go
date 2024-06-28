@@ -6,11 +6,28 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/google/uuid"
 	"io"
+	"time"
 )
 
+type tickMsg struct {
+}
+
+func tick() tea.Cmd {
+	return tea.Tick(time.Second/60, func(time.Time) tea.Msg {
+		return tickMsg{}
+	})
+}
+
+type card struct {
+	Question string `json:"question"`
+	Answer   string `json:"answer"`
+	UUID     string `json:"uuid"`
+}
+
 type ListModel struct {
-	Cards  []CardModel `json:"cards"`
-	Cursor int         `json:"-"`
+	Cards  []card `json:"cards"`
+	Cursor int    `json:"-"`
+	Chosen bool   `json:"-"`
 }
 
 func (m *ListModel) Init() tea.Cmd {
@@ -18,27 +35,31 @@ func (m *ListModel) Init() tea.Cmd {
 }
 
 func (m *ListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
+	if msg, ok := msg.(tea.KeyMsg); ok {
+		k := msg.String()
+		if k == "q" || k == "esc" || k == "ctrl+c" {
+			return m, tea.Quit
+		}
+	}
 
-	// Is it a key press?
+	if m.Chosen {
+		return updateCard(msg, m)
+	}
+
+	return updateList(msg, m)
+}
+
+func updateList(msg tea.Msg, m *ListModel) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
 	case tea.KeyMsg:
 
-		// Cool, what was the actual key pressed?
 		switch msg.String() {
-
-		case "ctrl+c", "q":
-			return m, tea.Quit
-
 		case "a":
-			return NewModel(m, CardModel{}), nil
-
-		case "e":
-			return NewModel(m, m.Cards[m.Cursor]), nil
-
-		case "t":
-			trainModel := NewTrainModel(m, m.Cards)
-			return trainModel, nil
-
+			m.Cards = append(m.Cards, card{
+				Question: "Juhu",
+				Answer:   "Hello",
+				UUID:     uuid.NewString(),
+			})
 		case "d":
 			m.Cards = append(m.Cards[:m.Cursor], m.Cards[m.Cursor+1:]...)
 			m.Cursor -= 1
@@ -46,52 +67,63 @@ func (m *ListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.Cursor = 0
 			}
 			return m, nil
-
-		// The "up" and "k" keys move the cursor up
-		case "up", "k":
+		case "up":
 			if m.Cursor > 0 {
 				m.Cursor--
 			}
-
-		// The "down" and "j" keys move the cursor down
-		case "down", "j":
+		case "down":
 			if m.Cursor < len(m.Cards)-1 {
 				m.Cursor++
 			}
-
-		// The "enter" key and the spacebar (a literal space) toggle
-		// the selected state for the item that the cursor is pointing at.
-		case "enter", " ":
-			return m.Cards[m.Cursor], nil
+		case "enter":
+			m.Chosen = true
+			return m, tick()
 		}
 	}
 
 	// Return the updated InputModel to the Bubble Tea runtime for processing.
 	// Note that we're not returning a command.
 	return m, nil
+}
 
+func updateCard(msg tea.Msg, m *ListModel) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "enter", " ":
+			m.Chosen = false
+			return m, tick()
+		}
+	}
+	return m, nil
 }
 
 func (m *ListModel) View() string {
-	// The header
+	if !m.Chosen {
+		return listView(m)
+	} else {
+		return cardView(m)
+	}
+	return ""
+}
+
+func listView(m *ListModel) string {
 	s := "\n"
-
 	for i, card := range m.Cards {
-
-		// Is the cursor pointing at this card?
-		cursor := " " // no cursor
+		cursor := " "
 		if m.Cursor == i {
-			cursor = ">" // cursor!
+			cursor = ">"
 		}
-
-		// Render the row
 		s += fmt.Sprintf("%s %s\n", cursor, card.Question)
 	}
-
-	// The footer
 	s += "\na: new card • e: edit • d: delete • t: train • q: quit\n"
+	return s
+}
 
-	// Send the UI for rendering
+func cardView(m *ListModel) string {
+	c := m.Cards[m.Cursor]
+	s := fmt.Sprintf("\n%s\n", c.Answer)
+	s += "\nenter: back\n"
 	return s
 }
 
@@ -117,27 +149,10 @@ func (m *ListModel) Read(reader io.Reader) error {
 	if len(bb) == 0 {
 		return nil
 	}
-	var cards []CardModel
+	var cards []card
 	if err := json.Unmarshal(bb, &cards); err != nil {
 		return err
 	}
 	m.Cards = cards
-	for i, _ := range m.Cards {
-		m.Cards[i].parent = m
-	}
 	return nil
-}
-
-func (m *ListModel) AddOrUpdate(vm CardModel) {
-	if len(vm.UUID) == 0 {
-		vm.UUID = uuid.NewString()
-		m.Cards = append(m.Cards, vm)
-		return
-	}
-	for i, c := range m.Cards {
-		if c.UUID == vm.UUID {
-			m.Cards[i] = vm
-			break
-		}
-	}
 }
