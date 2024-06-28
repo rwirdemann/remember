@@ -25,11 +25,11 @@ type ListModel struct {
 	State  int    `json:"-"`
 }
 
-func (m *ListModel) Init() tea.Cmd {
+func (m ListModel) Init() tea.Cmd {
 	return nil
 }
 
-func (m *ListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m ListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if msg, ok := msg.(tea.KeyMsg); ok {
 		k := msg.String()
 		if k == "q" || k == "esc" || k == "ctrl+c" {
@@ -44,7 +44,7 @@ func (m *ListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return updateList(msg, m)
 }
 
-func updateList(msg tea.Msg, m *ListModel) (tea.Model, tea.Cmd) {
+func updateList(msg tea.Msg, m ListModel) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 
@@ -78,7 +78,7 @@ func updateList(msg tea.Msg, m *ListModel) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func updateCard(msg tea.Msg, m *ListModel) (tea.Model, tea.Cmd) {
+func updateCard(msg tea.Msg, m ListModel) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -90,7 +90,7 @@ func updateCard(msg tea.Msg, m *ListModel) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m *ListModel) View() string {
+func (m ListModel) View() string {
 	if m.State == StateList {
 		return listView(m)
 	} else {
@@ -98,7 +98,7 @@ func (m *ListModel) View() string {
 	}
 }
 
-func listView(m *ListModel) string {
+func listView(m ListModel) string {
 	s := "\n"
 	for i, card := range m.Cards {
 		cursor := " "
@@ -111,14 +111,14 @@ func listView(m *ListModel) string {
 	return s
 }
 
-func cardView(m *ListModel) string {
+func cardView(m ListModel) string {
 	c := m.Cards[m.Cursor]
 	s := fmt.Sprintf("\n%s\n", c.Answer)
 	s += "\nenter: back\n"
 	return s
 }
 
-func (m *ListModel) Write(writer io.Writer) error {
+func Write(m ListModel, writer io.Writer) error {
 	bb, err := json.Marshal(m.Cards)
 	if err != nil {
 		return err
@@ -132,18 +132,19 @@ func (m *ListModel) Write(writer io.Writer) error {
 	return nil
 }
 
-func (m *ListModel) Read(reader io.Reader) error {
+func Read(reader io.Reader) (ListModel, error) {
+	var m ListModel
 	bb, err := io.ReadAll(reader)
 	if err != nil {
-		return err
+		return ListModel{}, err
 	}
 	if len(bb) == 0 {
-		return nil
+		return ListModel{}, err
 	}
 	var cards []card
 	if err := json.Unmarshal(bb, &cards); err != nil {
-		return err
+		return ListModel{}, err
 	}
 	m.Cards = cards
-	return nil
+	return m, nil
 }

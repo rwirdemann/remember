@@ -26,13 +26,14 @@ func main() {
 		log.Fatal(err)
 	}
 	defer in.Close()
-	model := &pkg.ListModel{}
-	if err := model.Read(bufio.NewReader(in)); err != nil {
+	model, err := pkg.Read(bufio.NewReader(in))
+	if err != nil {
 		log.Fatal(err)
 	}
 
 	p := tea.NewProgram(model, tea.WithAltScreen())
-	if _, err := p.Run(); err != nil {
+	var finalModel tea.Model
+	if finalModel, err = p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)
 	}
@@ -41,7 +42,7 @@ func main() {
 	out, err := os.OpenFile(name, os.O_WRONLY|os.O_TRUNC, 0666)
 	defer out.Close()
 	writer := bufio.NewWriter(out)
-	if err := model.Write(writer); err != nil {
+	if err := pkg.Write(finalModel.(pkg.ListModel), writer); err != nil {
 		log.Fatal(err)
 	}
 	if err := writer.Flush(); err != nil {
