@@ -26,7 +26,8 @@ func main() {
 		log.Fatal(err)
 	}
 	defer in.Close()
-	model, err := pkg.Read(bufio.NewReader(in))
+	model := pkg.InitialModel()
+	model, err = pkg.Read(bufio.NewReader(in), model)
 	if err != nil {
 		log.Fatal(err)
 	}

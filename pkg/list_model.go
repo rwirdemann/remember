@@ -28,6 +28,20 @@ type ListModel struct {
 	answer   textinput.Model
 }
 
+func InitialModel() ListModel {
+	tiq := textinput.New()
+	tiq.Placeholder = "Question"
+	tiq.Focus()
+
+	tia := textinput.New()
+	tia.Placeholder = "Answer"
+
+	return ListModel{
+		question: tiq,
+		answer:   tia,
+	}
+}
+
 func (m ListModel) Init() tea.Cmd {
 	return nil
 }
@@ -135,8 +149,7 @@ func Write(m ListModel, writer io.Writer) error {
 	return nil
 }
 
-func Read(reader io.Reader) (ListModel, error) {
-	var m ListModel
+func Read(reader io.Reader, m ListModel) (ListModel, error) {
 	bb, err := io.ReadAll(reader)
 	if err != nil {
 		return ListModel{}, err
