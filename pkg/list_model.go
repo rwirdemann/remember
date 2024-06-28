@@ -6,17 +6,12 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/google/uuid"
 	"io"
-	"time"
 )
 
-type tickMsg struct {
-}
-
-func tick() tea.Cmd {
-	return tea.Tick(time.Second/60, func(time.Time) tea.Msg {
-		return tickMsg{}
-	})
-}
+const (
+	StateList = iota
+	StateSelected
+)
 
 type card struct {
 	Question string `json:"question"`
@@ -27,7 +22,7 @@ type card struct {
 type ListModel struct {
 	Cards  []card `json:"cards"`
 	Cursor int    `json:"-"`
-	Chosen bool   `json:"-"`
+	State  int    `json:"-"`
 }
 
 func (m *ListModel) Init() tea.Cmd {
@@ -42,7 +37,7 @@ func (m *ListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	if m.Chosen {
+	if m.State == StateSelected {
 		return updateCard(msg, m)
 	}
 
@@ -76,13 +71,10 @@ func updateList(msg tea.Msg, m *ListModel) (tea.Model, tea.Cmd) {
 				m.Cursor++
 			}
 		case "enter":
-			m.Chosen = true
-			return m, tick()
+			m.State = StateSelected
+			return m, nil
 		}
 	}
-
-	// Return the updated InputModel to the Bubble Tea runtime for processing.
-	// Note that we're not returning a command.
 	return m, nil
 }
 
@@ -91,20 +83,19 @@ func updateCard(msg tea.Msg, m *ListModel) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "enter", " ":
-			m.Chosen = false
-			return m, tick()
+			m.State = StateList
+			return m, nil
 		}
 	}
 	return m, nil
 }
 
 func (m *ListModel) View() string {
-	if !m.Chosen {
+	if m.State == StateList {
 		return listView(m)
 	} else {
 		return cardView(m)
 	}
-	return ""
 }
 
 func listView(m *ListModel) string {
