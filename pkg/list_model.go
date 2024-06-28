@@ -3,6 +3,7 @@ package pkg
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/google/uuid"
 	"io"
@@ -20,9 +21,11 @@ type card struct {
 }
 
 type ListModel struct {
-	Cards  []card `json:"cards"`
-	Cursor int    `json:"-"`
-	State  int    `json:"-"`
+	Cards    []card
+	Cursor   int
+	State    int
+	question textinput.Model
+	answer   textinput.Model
 }
 
 func (m ListModel) Init() tea.Cmd {
