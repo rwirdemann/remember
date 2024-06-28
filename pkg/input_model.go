@@ -105,7 +105,7 @@ func (m InputModel) View() string {
 		m.answer.View(),
 	)
 
-	s += "\nenter: focus next\n"
+	s += "\ntab: focus next\n"
 
 	return s
 }
