@@ -23,9 +23,9 @@ type card struct {
 }
 
 type ListModel struct {
-	Cards      []card
-	Cursor     int
-	State      int
+	cards      []card
+	cursor     int
+	state      int
 	question   textinput.Model
 	answer     textinput.Model
 	inputFocus int
@@ -57,15 +57,15 @@ func (m ListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	if m.State == StateSelected {
+	if m.state == StateSelected {
 		return updateCard(msg, m)
 	}
 
-	if m.State == StateAdd {
+	if m.state == StateAdd {
 		return updateAdd(msg, m)
 	}
 
-	if m.State == StateEdit {
+	if m.state == StateEdit {
 		return updateEdit(msg, m)
 	}
 
@@ -79,9 +79,9 @@ func updateEdit(msg tea.Msg, m ListModel) (tea.Model, tea.Cmd) {
 		switch msg.Type {
 		case tea.KeyTab:
 			if m.inputFocus == 1 {
-				m.Cards[m.Cursor].Question = m.question.Value()
-				m.Cards[m.Cursor].Answer = m.answer.Value()
-				m.State = StateList
+				m.cards[m.cursor].Question = m.question.Value()
+				m.cards[m.cursor].Answer = m.answer.Value()
+				m.state = StateList
 				return m, nil
 			} else {
 				m.answer.Focus()
@@ -115,9 +115,9 @@ func updateAdd(msg tea.Msg, m ListModel) (tea.Model, tea.Cmd) {
 					}
 					m.question.SetValue("")
 					m.answer.SetValue("")
-					m.Cards = append(m.Cards, c)
+					m.cards = append(m.cards, c)
 				}
-				m.State = StateList
+				m.state = StateList
 				m.question.Focus()
 				m.answer.Blur()
 				m.inputFocus = 0
@@ -145,30 +145,30 @@ func updateList(msg tea.Msg, m ListModel) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "e":
-			m.State = StateEdit
-			m.question.SetValue(m.Cards[m.Cursor].Question)
-			m.answer.SetValue(m.Cards[m.Cursor].Answer)
+			m.state = StateEdit
+			m.question.SetValue(m.cards[m.cursor].Question)
+			m.answer.SetValue(m.cards[m.cursor].Answer)
 			return m, nil
 		case "a":
-			m.State = StateAdd
+			m.state = StateAdd
 			return m, nil
 		case "d":
-			m.Cards = append(m.Cards[:m.Cursor], m.Cards[m.Cursor+1:]...)
-			m.Cursor -= 1
-			if m.Cursor < 0 {
-				m.Cursor = 0
+			m.cards = append(m.cards[:m.cursor], m.cards[m.cursor+1:]...)
+			m.cursor -= 1
+			if m.cursor < 0 {
+				m.cursor = 0
 			}
 			return m, nil
 		case "up":
-			if m.Cursor > 0 {
-				m.Cursor--
+			if m.cursor > 0 {
+				m.cursor--
 			}
 		case "down":
-			if m.Cursor < len(m.Cards)-1 {
-				m.Cursor++
+			if m.cursor < len(m.cards)-1 {
+				m.cursor++
 			}
 		case "enter":
-			m.State = StateSelected
+			m.state = StateSelected
 			return m, nil
 		}
 	}
@@ -180,7 +180,7 @@ func updateCard(msg tea.Msg, m ListModel) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "enter", " ":
-			m.State = StateList
+			m.state = StateList
 			return m, nil
 		}
 	}
@@ -188,7 +188,7 @@ func updateCard(msg tea.Msg, m ListModel) (tea.Model, tea.Cmd) {
 }
 
 func (m ListModel) View() string {
-	switch m.State {
+	switch m.state {
 	case StateList:
 		return listView(m)
 	case StateSelected:
@@ -236,9 +236,9 @@ func addView(m ListModel) string {
 
 func listView(m ListModel) string {
 	s := "\n"
-	for i, card := range m.Cards {
+	for i, card := range m.cards {
 		cursor := " "
-		if m.Cursor == i {
+		if m.cursor == i {
 			cursor = ">"
 		}
 		s += fmt.Sprintf("%s %s\n", cursor, card.Question)
@@ -248,14 +248,14 @@ func listView(m ListModel) string {
 }
 
 func cardView(m ListModel) string {
-	c := m.Cards[m.Cursor]
+	c := m.cards[m.cursor]
 	s := fmt.Sprintf("\n%s\n", c.Answer)
 	s += "\nenter: back\n"
 	return s
 }
 
 func Write(m ListModel, writer io.Writer) error {
-	bb, err := json.Marshal(m.Cards)
+	bb, err := json.Marshal(m.cards)
 	if err != nil {
 		return err
 	}
@@ -280,6 +280,6 @@ func Read(reader io.Reader, m ListModel) (ListModel, error) {
 	if err := json.Unmarshal(bb, &cards); err != nil {
 		return ListModel{}, err
 	}
-	m.Cards = cards
+	m.cards = cards
 	return m, nil
 }
