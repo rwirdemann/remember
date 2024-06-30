@@ -12,6 +12,7 @@ import (
 const (
 	StateList = iota
 	StateSelected
+	StateAdd
 )
 
 type card struct {
@@ -21,11 +22,12 @@ type card struct {
 }
 
 type ListModel struct {
-	Cards    []card
-	Cursor   int
-	State    int
-	question textinput.Model
-	answer   textinput.Model
+	Cards      []card
+	Cursor     int
+	State      int
+	question   textinput.Model
+	answer     textinput.Model
+	inputFocus int
 }
 
 func InitialModel() ListModel {
@@ -58,20 +60,57 @@ func (m ListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return updateCard(msg, m)
 	}
 
+	if m.State == StateAdd {
+		return updateAdd(msg, m)
+	}
+
 	return updateList(msg, m)
+}
+
+func updateAdd(msg tea.Msg, m ListModel) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.Type {
+		case tea.KeyTab:
+			if m.inputFocus == 1 {
+				if m.question.Value() != "" && m.answer.Value() != "" {
+					c := card{
+						Question: m.question.Value(),
+						Answer:   m.answer.Value(),
+						UUID:     uuid.NewString(),
+					}
+					m.question.SetValue("")
+					m.answer.SetValue("")
+					m.Cards = append(m.Cards, c)
+				}
+				m.State = StateList
+				m.question.Focus()
+				m.answer.Blur()
+				m.inputFocus = 0
+				return m, nil
+			}
+			m.inputFocus++
+			m.question.Blur()
+			return m, m.answer.Focus()
+		}
+	}
+
+	if m.inputFocus == 0 {
+		m.question, cmd = m.question.Update(msg)
+	} else {
+		m.answer, cmd = m.answer.Update(msg)
+	}
+	return m, cmd
 }
 
 func updateList(msg tea.Msg, m ListModel) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-
 		switch msg.String() {
 		case "a":
-			m.Cards = append(m.Cards, card{
-				Question: "Juhu",
-				Answer:   "Hello",
-				UUID:     uuid.NewString(),
-			})
+			m.State = StateAdd
+			return m, nil
 		case "d":
 			m.Cards = append(m.Cards[:m.Cursor], m.Cards[m.Cursor+1:]...)
 			m.Cursor -= 1
@@ -108,11 +147,32 @@ func updateCard(msg tea.Msg, m ListModel) (tea.Model, tea.Cmd) {
 }
 
 func (m ListModel) View() string {
-	if m.State == StateList {
+	switch m.State {
+	case StateList:
 		return listView(m)
-	} else {
+	case StateSelected:
 		return cardView(m)
+	case StateAdd:
+		return addView(m)
+	default:
+		return ""
 	}
+}
+
+func addView(m ListModel) string {
+	s := fmt.Sprintf(
+		"Question?\n\n%s",
+		m.question.View(),
+	) + "\n"
+
+	s = s + fmt.Sprintf(
+		"\nAnswer?\n\n%s\n",
+		m.answer.View(),
+	)
+
+	s += "\ntab: focus next\n"
+
+	return s
 }
 
 func listView(m ListModel) string {
