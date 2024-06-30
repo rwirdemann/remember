@@ -13,6 +13,7 @@ const (
 	StateList = iota
 	StateSelected
 	StateAdd
+	StateEdit
 )
 
 type card struct {
@@ -64,7 +65,39 @@ func (m ListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return updateAdd(msg, m)
 	}
 
+	if m.State == StateEdit {
+		return updateEdit(msg, m)
+	}
+
 	return updateList(msg, m)
+}
+
+func updateEdit(msg tea.Msg, m ListModel) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.Type {
+		case tea.KeyTab:
+			if m.inputFocus == 1 {
+				m.Cards[m.Cursor].Question = m.question.Value()
+				m.Cards[m.Cursor].Answer = m.answer.Value()
+				m.State = StateList
+				return m, nil
+			} else {
+				m.answer.Focus()
+				m.question.Blur()
+				m.inputFocus = 1
+			}
+		}
+	}
+
+	// user has pressed a normal key, thus update the focused inout field
+	if m.inputFocus == 0 {
+		m.question, cmd = m.question.Update(msg)
+	} else {
+		m.answer, cmd = m.answer.Update(msg)
+	}
+	return m, cmd
 }
 
 func updateAdd(msg tea.Msg, m ListModel) (tea.Model, tea.Cmd) {
@@ -89,13 +122,16 @@ func updateAdd(msg tea.Msg, m ListModel) (tea.Model, tea.Cmd) {
 				m.answer.Blur()
 				m.inputFocus = 0
 				return m, nil
+			} else {
+				m.inputFocus = 1
+				m.question.Blur()
+				m.answer.Focus()
+				return m, nil
 			}
-			m.inputFocus++
-			m.question.Blur()
-			return m, m.answer.Focus()
 		}
 	}
 
+	// user has pressed a normal key, thus update the focused inout field
 	if m.inputFocus == 0 {
 		m.question, cmd = m.question.Update(msg)
 	} else {
@@ -108,6 +144,11 @@ func updateList(msg tea.Msg, m ListModel) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
+		case "e":
+			m.State = StateEdit
+			m.question.SetValue(m.Cards[m.Cursor].Question)
+			m.answer.SetValue(m.Cards[m.Cursor].Answer)
+			return m, nil
 		case "a":
 			m.State = StateAdd
 			return m, nil
@@ -154,9 +195,27 @@ func (m ListModel) View() string {
 		return cardView(m)
 	case StateAdd:
 		return addView(m)
+	case StateEdit:
+		return editView(m)
 	default:
 		return ""
 	}
+}
+
+func editView(m ListModel) string {
+	s := fmt.Sprintf(
+		"Question?\n\n%s",
+		m.question.View(),
+	) + "\n"
+
+	s = s + fmt.Sprintf(
+		"\nAnswer?\n\n%s\n",
+		m.answer.View(),
+	)
+
+	s += "\ntab: focus next\n"
+
+	return s
 }
 
 func addView(m ListModel) string {
