@@ -35,13 +35,17 @@ type ListModel struct {
 }
 
 func InitialModel() ListModel {
+	return ListModel{form: newForm()}
+}
+
+func newForm() *huh.Form {
 	f := huh.NewForm(
 		huh.NewGroup(
 			huh.NewInput().Title("Question").Value(&q),
 			huh.NewInput().Title("Answer").Value(&a)),
 	)
 	f.Init()
-	return ListModel{form: f}
+	return f
 }
 
 func (m ListModel) Init() tea.Cmd {
@@ -80,6 +84,9 @@ func updateEdit(msg tea.Msg, m ListModel) (tea.Model, tea.Cmd) {
 	}
 
 	if m.form.State == huh.StateCompleted {
+		if q != "" && a != "" {
+			m.cards[m.cursor] = card{Question: q, Answer: a}
+		}
 		m.state = StateList
 	}
 
@@ -114,16 +121,13 @@ func updateList(msg tea.Msg, m ListModel) (tea.Model, tea.Cmd) {
 		case "e":
 			q = m.cards[m.cursor].Question
 			a = m.cards[m.cursor].Answer
-			f := huh.NewForm(
-				huh.NewGroup(
-					huh.NewInput().Title("Question").Value(&q),
-					huh.NewInput().Title("Answer").Value(&a)),
-			)
-			f.Init()
-			m.form = f
+			m.form = newForm()
 			m.state = StateEdit
 			return m, nil
 		case "a":
+			a = ""
+			q = ""
+			m.form = newForm()
 			m.state = StateAdd
 			return m, nil
 		case "d":
