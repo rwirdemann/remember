@@ -3,9 +3,8 @@ package pkg
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/google/uuid"
+	"github.com/charmbracelet/huh"
 	"io"
 )
 
@@ -22,27 +21,27 @@ type card struct {
 	UUID     string `json:"uuid"`
 }
 
+var (
+	q string
+	a string
+)
+
 type ListModel struct {
 	cards      []card
 	cursor     int
 	state      int
-	question   textinput.Model
-	answer     textinput.Model
+	form       *huh.Form
 	inputFocus int
 }
 
 func InitialModel() ListModel {
-	tiq := textinput.New()
-	tiq.Placeholder = "Question"
-	tiq.Focus()
-
-	tia := textinput.New()
-	tia.Placeholder = "Answer"
-
-	return ListModel{
-		question: tiq,
-		answer:   tia,
-	}
+	f := huh.NewForm(
+		huh.NewGroup(
+			huh.NewInput().Title("Question").Value(&q),
+			huh.NewInput().Title("Answer").Value(&a)),
+	)
+	f.Init()
+	return ListModel{form: f}
 }
 
 func (m ListModel) Init() tea.Cmd {
@@ -73,71 +72,39 @@ func (m ListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func updateEdit(msg tea.Msg, m ListModel) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.Type {
-		case tea.KeyTab:
-			if m.inputFocus == 1 {
-				m.cards[m.cursor].Question = m.question.Value()
-				m.cards[m.cursor].Answer = m.answer.Value()
-				m.state = StateList
-				return m, nil
-			} else {
-				m.answer.Focus()
-				m.question.Blur()
-				m.inputFocus = 1
-			}
-		}
+	var cmds []tea.Cmd
+	form, cmd := m.form.Update(msg)
+	if f, ok := form.(*huh.Form); ok {
+		m.form = f
+		cmds = append(cmds, cmd)
 	}
 
-	// user has pressed a normal key, thus update the focused inout field
-	if m.inputFocus == 0 {
-		m.question, cmd = m.question.Update(msg)
-	} else {
-		m.answer, cmd = m.answer.Update(msg)
+	if m.form.State == huh.StateCompleted {
+		m.state = StateList
 	}
-	return m, cmd
+
+	return m, tea.Batch(cmds...)
 }
 
 func updateAdd(msg tea.Msg, m ListModel) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.Type {
-		case tea.KeyTab:
-			if m.inputFocus == 1 {
-				if m.question.Value() != "" && m.answer.Value() != "" {
-					c := card{
-						Question: m.question.Value(),
-						Answer:   m.answer.Value(),
-						UUID:     uuid.NewString(),
-					}
-					m.question.SetValue("")
-					m.answer.SetValue("")
-					m.cards = append(m.cards, c)
-				}
-				m.state = StateList
-				m.question.Focus()
-				m.answer.Blur()
-				m.inputFocus = 0
-				return m, nil
-			} else {
-				m.inputFocus = 1
-				m.question.Blur()
-				m.answer.Focus()
-				return m, nil
-			}
-		}
+	var cmds []tea.Cmd
+	form, cmd := m.form.Update(msg)
+	if f, ok := form.(*huh.Form); ok {
+		m.form = f
+		cmds = append(cmds, cmd)
 	}
 
-	// user has pressed a normal key, thus update the focused inout field
-	if m.inputFocus == 0 {
-		m.question, cmd = m.question.Update(msg)
-	} else {
-		m.answer, cmd = m.answer.Update(msg)
+	if m.form.State == huh.StateCompleted {
+		if q != "" && a != "" {
+			m.cards = append(m.cards, card{
+				Question: q,
+				Answer:   a,
+			})
+		}
+		m.state = StateList
 	}
-	return m, cmd
+
+	return m, tea.Batch(cmds...)
 }
 
 func updateList(msg tea.Msg, m ListModel) (tea.Model, tea.Cmd) {
@@ -145,9 +112,16 @@ func updateList(msg tea.Msg, m ListModel) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "e":
+			q = m.cards[m.cursor].Question
+			a = m.cards[m.cursor].Answer
+			f := huh.NewForm(
+				huh.NewGroup(
+					huh.NewInput().Title("Question").Value(&q),
+					huh.NewInput().Title("Answer").Value(&a)),
+			)
+			f.Init()
+			m.form = f
 			m.state = StateEdit
-			m.question.SetValue(m.cards[m.cursor].Question)
-			m.answer.SetValue(m.cards[m.cursor].Answer)
 			return m, nil
 		case "a":
 			m.state = StateAdd
@@ -204,32 +178,18 @@ func (m ListModel) View() string {
 
 func editView(m ListModel) string {
 	s := fmt.Sprintf(
-		"Question?\n\n%s",
-		m.question.View(),
-	) + "\n"
-
-	s = s + fmt.Sprintf(
-		"\nAnswer?\n\n%s\n",
-		m.answer.View(),
+		"\n%s\n",
+		m.form.View(),
 	)
-
-	s += "\ntab: focus next\n"
 
 	return s
 }
 
 func addView(m ListModel) string {
 	s := fmt.Sprintf(
-		"Question?\n\n%s",
-		m.question.View(),
-	) + "\n"
-
-	s = s + fmt.Sprintf(
-		"\nAnswer?\n\n%s\n",
-		m.answer.View(),
+		"\n%s\n",
+		m.form.View(),
 	)
-
-	s += "\ntab: focus next\n"
 
 	return s
 }
