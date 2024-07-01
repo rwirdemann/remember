@@ -42,7 +42,7 @@ func newForm() *huh.Form {
 	f := huh.NewForm(
 		huh.NewGroup(
 			huh.NewInput().Title("Question").Value(&q),
-			huh.NewInput().Title("Answer").Value(&a)),
+			huh.NewText().Title("Answer").Value(&a)).WithWidth(80),
 	)
 	f.Init()
 	return f
